@@ -3,12 +3,24 @@ const express = require("express");
 const connectDB = require("./src/config/db");
 
 const app = express();
-// add right after: const app = express();
+const allowedOrigins = [
+  "https://philcasting.com",
+  "https://philcasting.newtonmulti.workers.dev",
+  "http://localhost:3000" // Optional: for local development
+];
+
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "https://philcasting.newtonmulti.workers.dev");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  if (req.method === "OPTIONS") return res.sendStatus(204);
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Vary", "Origin");
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
   next();
 });
 
