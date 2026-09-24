@@ -18,6 +18,8 @@ own login). Make yourself admin once:
     mongosh philcasting
     > db.users.updateOne({email:"you@example.com"},{$set:{role:"admin"}})
 
-## MegaPay callback URL
-    https://api.philcasting.com/api/payments/callback
-If MegaPay cannot send a custom header, append:  ?key=YOUR_MEGAPAY_CALLBACK_SECRET
+## MegaPay callback flow
+MegaPay -> https://philcastings.newtonmulti.workers.dev/ (your relay worker)
+        -> forwards to https://api.philcasting.com/api/megapay/webhook (header X-Relay-Key)
+Also set the same secret in the worker:  wrangler secret put RELAY_SECRET
+Direct fallback URL (no relay): https://api.philcasting.com/api/payments/callback?key=YOUR_MEGAPAY_CALLBACK_SECRET

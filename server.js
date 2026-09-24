@@ -294,29 +294,43 @@ app.get("/api/payments/status/:reference", auth, async (req, res) => {
   if (!p) return res.status(404).json({ error: "Payment not found" });
   res.json({ status: p.status, amount: p.amount, receipt: p.receipt });
 });
-// MegaPay webhook — secret via header OR ?key= query param
-app.post("/api/payments/callback", async (req, res) => {
-  if (req.headers["x-callback-secret"] !== process.env.MEGAPAY_CALLBACK_SECRET &&
-      req.query.key !== process.env.MEGAPAY_CALLBACK_SECRET)
-    return res.status(401).json({ error: "Unauthorized" });
+/* MegaPay webhook — receives via:
+   (a) your Cloudflare relay worker -> POST /api/megapay/webhook  (header X-Relay-Key)
+   (b) direct callback              -> POST /api/payments/callback (?key= secret)
+   Handles both Daraja-style (ResultCode) and MegaPay-style (ResponseCode) payloads. */
+async function megapayWebhookHandler(req, res) {
+  const relayOk = req.headers["x-relay-key"] && req.headers["x-relay-key"] === (process.env.RELAY_SECRET || process.env.MEGAPAY_CALLBACK_SECRET);
+  const directOk = req.query.key && req.query.key === process.env.MEGAPAY_CALLBACK_SECRET;
+  if (!relayOk && !directOk) return res.status(401).json({ error: "Unauthorized" });
+
   const b = req.body || {};
-  const reference = b.TransactionReference;
-  if (!reference) return res.status(400).json({ error: "No reference" });
-  const payment = await Payment.findOne({ reference });
-  if (!payment) return res.status(404).json({ error: "Unknown reference" });
-  if (payment.status === "completed") return res.json({ ok: true }); // idempotent
-  if (String(b.ResponseCode) === "0" && Number(b.TransactionAmount) >= payment.amount) {
+  const success = String(b.ResultCode ?? b.ResponseCode ?? "1") === "0";
+  const amount = Number(b.TransactionAmount ?? b.Amount ?? 0);
+  const receipt = b.TransactionReceipt || b.Receipt || b.TransactionID || null;
+  const reason = b.ResultDesc || b.ResponseDescription || "Payment not completed";
+
+  // locate payment: our internal reference first, then MegaPay CheckoutRequestID
+  let payment = null;
+  if (b.TransactionReference) payment = await Payment.findOne({ reference: b.TransactionReference });
+  if (!payment && b.CheckoutRequestID) payment = await Payment.findOne({ checkoutRequestId: b.CheckoutRequestID });
+  if (!payment) return res.status(404).json({ error: "Unknown payment reference" });
+  if (payment.status === "completed") return res.json({ ok: true, duplicated: true }); // idempotent
+
+  if (success && amount >= payment.amount) {
     const session = await mongoose.startSession();
     await session.withTransaction(async () => {
-      await Payment.findOneAndUpdate({ reference }, { status: "completed", receipt: b.TransactionReceipt || null }, { session });
+      await Payment.findOneAndUpdate({ _id: payment._id }, { status: "completed", receipt }, { session });
       await User.findByIdAndUpdate(payment.user, { $inc: { walletBalance: payment.amount } }, { session });
-      await Transaction.create([{ user: payment.user, type: "topup", amount: payment.amount, reference: b.TransactionReceipt || reference }], { session });
+      await Transaction.create([{ user: payment.user, type: "topup", amount: payment.amount, reference: receipt || payment.reference }], { session });
+      console.log(`Top-up credited: ${payment.reference} -> KES ${payment.amount} (${receipt || "no receipt"})`);
     });
   } else {
-    await Payment.findOneAndUpdate({ reference }, { status: "failed", failureReason: b.ResponseDescription || "Payment not completed" });
+    await Payment.findOneAndUpdate({ _id: payment._id }, { status: "failed", failureReason: reason });
   }
   res.json({ ok: true });
-});
+}
+app.post("/api/megapay/webhook", megapayWebhookHandler);
+app.post("/api/payments/callback", megapayWebhookHandler);
 
 /* ------------------------------- ADMIN ------------------------------ */
 app.get("/api/admin/stats", auth, adminOnly, async (req, res) => {
