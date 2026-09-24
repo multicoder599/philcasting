@@ -10,6 +10,7 @@ const ALLOWED = [
   "https://philcasting.com",
   "https://www.philcasting.com",
   "https://philcasting.newtonmulti.workers.dev",
+  "https://admins.philcasting.com",
 ];
 app.use((req, res, next) => {
   const origin = req.headers.origin;
@@ -35,7 +36,7 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message || "Server error" });
 });
 
-const PORT = process.env.PORT || 4030;
+const PORT = process.env.PORT || 4000;
 connectDB().then(() =>
   app.listen(PORT, () => console.log(`PhilCasting API on port ${PORT}`))
 );
