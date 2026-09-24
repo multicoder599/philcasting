@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Admin — PhilCasting</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700&family=Urbanist:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="has-tabbar">
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/api.js"></script>
+
+<div class="app">
+  <aside class="app-side">
+    <a href="https://philcasting.com" class="logo" style="color:#fff"><span class="mark" data-ic="shield"></span>Phil<b>Casting</b></a>
+    <nav id="sideNav"></nav>
+    <div class="side-user">
+      <span class="av" id="userAv">A</span>
+      <div style="min-width:0"><b id="whoName">Admin</b><span id="whoEmail">—</span></div>
+      <button id="logoutBtn" title="Logout"></button>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <header class="topbar">
+      <button class="hamburger" id="hamburger"></button>
+      <div><h1 id="pageTitle">Overview</h1><div class="crumb">Admin console · philcasting</div></div>
+      <div class="sp"></div>
+      <button class="bal-pill" id="onfonBal" style="cursor:pointer"><span data-ic="wallet"></span><span id="onfonBalTxt">Onfon: —</span></button>
+      <a href="https://philcasting.com/dashboard.html" class="icon-btn" style="width:40px;height:40px;border-radius:50%" title="User dashboard" id="dashLink"></a>
+    </header>
+
+    <div class="content">
+      <section class="panel on" id="panel-overview" style="display:grid;gap:18px">
+        <div class="stats">
+          <div class="stat2"><span class="si g" data-ic="users"></span><div><b id="stUsers">—</b><span>Total users</span></div></div>
+          <div class="stat2"><span class="si a" data-ic="clock"></span><div><b id="stPending">—</b><span>Pending applications</span></div></div>
+          <div class="stat2"><span class="si i" data-ic="chart"></span><div><b id="stRevenue">—</b><span>Total top-ups</span></div></div>
+          <div class="stat2"><span class="si d" data-ic="send"></span><div><b id="stMsgs">—</b><span>SMS sent (24h)</span></div></div>
+        </div>
+        <div class="card chart-card">
+          <div class="card-h"><h3>Operations note</h3><span class="pill" style="background:rgba(185,246,202,.15);color:var(--lime)">Admin</span></div>
+          <p style="font-size:14px;color:rgba(255,255,255,.7);line-height:1.7">When your OnfonMedia balance (top bar) approaches zero, all customer sends fail. Top it up at <b style="color:var(--lime)">onfonmedia.com</b> → Purchases. Sender ID workflow: review the application &amp; docs → click the send icon to mark "submitted" → file the request in the Onfon portal with the same ID + KYC → click ✓ when the network approves.</p>
+        </div>
+      </section>
+
+      <section class="panel" id="panel-approvals" style="display:none;gap:18px">
+        <div class="card">
+          <div class="card-h"><h3>Sender ID applications</h3><span class="pill pending" id="apprCount"></span></div>
+          <div class="tbl-wrap" style="margin:0 -22px;padding:0 22px"><table>
+            <thead><tr><th>Sender ID</th><th>Applicant</th><th>Documents</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="apprRows"></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <section class="panel" id="panel-users" style="display:none;gap:18px">
+        <div class="card">
+          <div class="card-h"><h3>Users</h3><button class="btn btn-ink btn-sm" id="addUserBtn"></button></div>
+          <div class="tbl-wrap" style="margin:0 -22px;padding:0 22px"><table>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Balance</th><th>Joined</th><th></th></tr></thead>
+            <tbody id="userRows"></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <section class="panel" id="panel-payments" style="display:none;gap:18px">
+        <div class="card">
+          <div class="card-h"><h3>Payments</h3></div>
+          <div class="tbl-wrap" style="margin:0 -22px;padding:0 22px"><table>
+            <thead><tr><th>Reference</th><th>User</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody id="payRows"></tbody>
+          </table></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-bg" id="drawerBg"></div>
+<div class="drawer" id="drawer">
+  <span class="logo" style="color:#fff;padding:6px 12px 22px"><span class="mark" data-ic="shield"></span>Phil<b>Casting</b></span>
+  <nav id="drawerNav" style="display:flex;flex-direction:column;gap:5px"></nav>
+  <div class="side-user" style="margin-top:auto">
+    <span class="av" id="userAv2">A</span>
+    <div style="min-width:0"><b id="whoName2">Admin</b><span id="whoEmail2">—</span></div>
+    <button id="logoutBtn2" title="Logout"></button>
+  </div>
+</div>
+
+<div class="tabbar" id="tabbar"></div>
+
+<div class="modal-bg" id="creditModal">
+  <div class="modal">
+    <h3>Credit wallet</h3>
+    <p class="sub" id="creditWho">—</p>
+    <div class="fg"><label>Amount (KES)</label><input id="crAmount" type="number" placeholder="e.g. 500" min="1"></div>
+    <div class="fg"><label>Reference <span style="font-weight:500;color:var(--muted)">(optional)</span></label><input id="crRef" type="text" placeholder="M-Pesa code / note"></div>
+    <div class="m-actions">
+      <button class="btn btn-ghost btn-sm" id="crCancel">Cancel</button>
+      <button class="btn btn-green btn-sm" id="crSave">Credit wallet</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============ ADMIN LOGIN GATE (no redirects) ============ -->
+<div id="loginGate" style="position:fixed;inset:0;z-index:500;background:var(--ink);display:flex;align-items:center;justify-content:center;padding:20px">
+  <div class="auth-card" style="background:#fff">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+      <span class="mark" id="gateLogo" style="width:38px;height:38px;border-radius:11px;background:var(--ink);color:var(--lime);display:flex;align-items:center;justify-content:center"></span>
+      <div><b style="font-family:var(--font-d);font-size:17px">PhilCasting Admin</b><br><small style="color:var(--muted)">Restricted access · admin.philcasting.com</small></div>
+    </div>
+    <div class="form-msg err" id="gateMsg"></div>
+    <div class="fg"><label>Email</label><input id="gEmail" type="email" placeholder="admin@philcasting.com" autocomplete="username"></div>
+    <div class="fg"><label>Password</label><input id="gPass" type="password" placeholder="Password" autocomplete="current-password"></div>
+    <button class="btn btn-green" id="gateBtn" style="width:100%">Sign in to admin</button>
+    <p style="margin-top:16px;font-size:12px;color:var(--muted);text-align:center">Only accounts with the admin role can sign in here.</p>
+  </div>
+</div>
+
+<div class="modal-bg" id="userModal">
+  <div class="modal">
+    <h3 id="userModalTitle">Add user</h3>
+    <p class="sub">Create a normal account or a new admin.</p>
+    <div class="fg"><label>Full name</label><input id="nuName" type="text" placeholder="e.g. Jane Doe"></div>
+    <div class="fg"><label>Email</label><input id="nuEmail" type="email" placeholder="jane@example.com"></div>
+    <div class="fg"><label>Password</label><input id="nuPass" type="password" placeholder="Minimum 6 characters"></div>
+    <div class="fg"><label>Role</label><select id="nuRole"><option value="user">User</option><option value="admin">Admin</option></select></div>
+    <div class="m-actions">
+      <button class="btn btn-ghost btn-sm" id="nuCancel">Cancel</button>
+      <button class="btn btn-green btn-sm" id="nuSave">Create account</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+
+document.querySelectorAll("[data-ic]").forEach(el => el.innerHTML = ic(el.dataset.ic));
+document.getElementById("logoutBtn").innerHTML = ic("logout");
+document.getElementById("logoutBtn2").innerHTML = ic("logout");
+document.getElementById("hamburger").innerHTML = ic("menu");
+document.getElementById("dashLink").innerHTML = ic("grid");
+document.getElementById("gateLogo").innerHTML = ic("shield");
+let auth = getAuth();
+function showLogin(){
+  document.getElementById("loginGate").style.display = "flex";
+  document.querySelector(".app").style.visibility = "hidden";
+}
+function showApp(){
+  document.getElementById("loginGate").style.display = "none";
+  document.querySelector(".app").style.visibility = "visible";
+  const a = getAuth();
+  const nm = a?.user?.name || "Admin";
+  document.getElementById("whoName").textContent = nm; document.getElementById("whoName2").textContent = nm;
+  document.getElementById("whoEmail").textContent = a?.user?.email || ""; document.getElementById("whoEmail2").textContent = a?.user?.email || "";
+  document.getElementById("userAv").textContent = nm[0].toUpperCase(); document.getElementById("userAv2").textContent = nm[0].toUpperCase();
+  
+}
+async function tryResume(){
+  if(!getAuth()) return showLogin();
+  try{ await api("/api/admin/stats"); showApp(); }
+  catch(e){ /* 401 handled -> showLogin */ }
+}
+async function gateLogin(){
+  const msg = document.getElementById("gateMsg"); msg.style.display = "none";
+  const btn = document.getElementById("gateBtn");
+  btn.disabled = true; btn.textContent = "Signing in…";
+  try{
+    const res = await fetch(API_BASE + "/api/auth/login", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: document.getElementById("gEmail").value.trim(), password: document.getElementById("gPass").value })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok) throw new Error(data.error || "Invalid credentials");
+    if(data.user?.role !== "admin") throw new Error("This account is not an admin.");
+    setAuth(data); showApp();
+  }catch(e){
+    msg.textContent = e.message; msg.className = "form-msg err"; msg.style.display = "block";
+  }
+  btn.disabled = false; btn.textContent = "Sign in to admin";
+}
+document.getElementById("gateBtn").addEventListener("click", gateLogin);
+document.getElementById("gPass").addEventListener("keydown", e => { if(e.key === "Enter") gateLogin(); });
+tryResume();
+
+
+const TABS = [
+  { id:"overview", label:"Overview", icon:"grid" },
+  { id:"approvals", label:"Applications", icon:"shield" },
+  { id:"users", label:"Users", icon:"users" },
+  { id:"payments", label:"Payments", icon:"wallet" },
+];
+const sideNav = document.getElementById("sideNav"), drawerNav = document.getElementById("drawerNav"), tabbar = document.getElementById("tabbar");
+TABS.forEach(t => {
+  const b = document.createElement("button"); b.className = "snav"; b.dataset.tab = t.id;
+  b.innerHTML = ic(t.icon) + `<span>${t.label}</span>`; sideNav.appendChild(b);
+  const d = document.createElement("button"); d.className = "snav"; d.dataset.tab = t.id;
+  d.innerHTML = ic(t.icon) + `<span>${t.label}</span>`; drawerNav.appendChild(d);
+  const m = document.createElement("button"); m.dataset.tab = t.id;
+  m.innerHTML = ic(t.icon) + `<span>${t.label}</span>`; tabbar.appendChild(m);
+});
+const TITLES = { overview:"Overview", approvals:"Applications", users:"Users", payments:"Payments" };
+function showTab(name){
+  document.querySelectorAll(".panel").forEach(p => { p.classList.remove("on"); p.style.display = "none"; });
+  const el = document.getElementById("panel-"+name);
+  el.classList.add("on"); el.style.display = "grid";
+  document.querySelectorAll("[data-tab]").forEach(b => b.classList.toggle("on", b.dataset.tab===name));
+  document.getElementById("pageTitle").textContent = TITLES[name];
+  closeDrawer(); window.scrollTo({top:0});
+  if(name==="overview"){  }
+  if(name==="approvals") loadApprovals();
+  if(name==="users") loadUsers();
+  if(name==="payments") loadPayments();
+}
+document.addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if(b) showTab(b.dataset.tab); });
+const doLogout = () => { clearAuth(); showLogin(); };
+document.getElementById("logoutBtn").addEventListener("click", doLogout);
+document.getElementById("logoutBtn2").addEventListener("click", doLogout);
+const drawer = document.getElementById("drawer"), drawerBg = document.getElementById("drawerBg");
+document.getElementById("hamburger").addEventListener("click", () => { drawer.classList.add("open"); drawerBg.classList.add("open"); });
+function closeDrawer(){ drawer.classList.remove("open"); drawerBg.classList.remove("open"); }
+drawerBg.addEventListener("click", closeDrawer);
+
+async function loadStats(){
+  try{
+    const s = await api("/api/admin/stats");
+    document.getElementById("stUsers").textContent = fmtInt(s.users);
+    document.getElementById("stPending").textContent = fmtInt(s.pendingSenderIds);
+    document.getElementById("stRevenue").textContent = fmtKES(s.totalTopups);
+    document.getElementById("stMsgs").textContent = fmtInt(s.messages24h);
+  }catch(e){ toast(e.message, true); }
+}
+async function loadOnfon(){
+  try{
+    const b = await api("/api/admin/onfon-balance");
+    const bal = b?.Data?.[0]?.Balance ?? b?.Balance ?? JSON.stringify(b);
+    document.getElementById("onfonBalTxt").textContent = "Onfon: " + bal;
+  }catch(e){ document.getElementById("onfonBalTxt").textContent = "Onfon: error"; }
+}
+document.getElementById("onfonBal").addEventListener("click", loadOnfon);
+
+async function loadApprovals(){
+  try{
+    const rows = await api("/api/senderids/admin/all");
+    const pending = rows.filter(r => r.status === "pending");
+    document.getElementById("apprCount").textContent = pending.length + " pending";
+    document.getElementById("apprRows").innerHTML = rows.length ? rows.map(s => {
+      const docs = (s.documents || []).map((d,i) =>
+        `<a class="icon-btn" style="text-decoration:none" title="${d.field}: ${d.originalName}" href="${API_BASE}/api/senderids/admin/document/${s._id}/${i}" target="_blank">${ic("download")}</a>`).join(" ");
+      return `<tr>
+        <td><b style="font-family:var(--font-d)">${s.value}</b><br><small style="color:var(--muted)">${s.businessName || ""}</small></td>
+        <td>${s.user?.name || "—"}<br><small style="color:var(--muted)">${s.user?.email || ""}${s.contactPhone ? " · " + s.contactPhone : ""}</small></td>
+        <td><div class="row-actions">${docs || '<span style="color:var(--muted);font-size:12px">no docs</span>'}</div></td>
+        <td><span class="pill ${s.status}">${s.status}</span></td>
+        <td><div class="row-actions">
+          ${s.status === "pending" ? `<button class="icon-btn" title="Mark as submitted to Onfon portal" onclick="markSubmitted('${s._id}')">${ic("send")}</button>` : ""}
+          ${s.status !== "approved" ? `<button class="icon-btn ok" title="Approve (network approved it)" onclick="approveSid('${s._id}')">${ic("check")}</button>` : ""}
+          ${s.status !== "rejected" ? `<button class="icon-btn no" title="Reject" onclick="rejectSid('${s._id}')">${ic("x")}</button>` : ""}
+        </div></td>
+      </tr>`;
+    }).join("") : `<tr><td colspan="5"><div class="empty">No applications yet.</div></td></tr>`;
+  }catch(e){ toast(e.message, true); }
+}
+async function markSubmitted(id){ try{ await api(`/api/senderids/admin/${id}/submitted`, {method:"POST"}); toast("Marked as submitted to Onfon portal."); loadApprovals(); }catch(e){ toast(e.message, true); } }
+async function approveSid(id){ try{ await api(`/api/senderids/admin/${id}/approve`, {method:"POST"}); toast("Approved — user can now send with it."); loadApprovals(); loadStats(); }catch(e){ toast(e.message, true); } }
+async function rejectSid(id){ try{ await api(`/api/senderids/admin/${id}/reject`, {method:"POST"}); toast("Rejected."); loadApprovals(); loadStats(); }catch(e){ toast(e.message, true); } }
+
+async function loadUsers(){
+  try{
+    const rows = await api("/api/admin/users");
+    document.getElementById("userRows").innerHTML = rows.length ? rows.map(u =>
+      `<tr>
+        <td><b style="font-family:var(--font-d)">${u.name}</b>${u.role==="admin" ? ' <span class="pill approved">admin</span>' : ""}</td>
+        <td style="color:var(--muted)">${u.email}</td>
+        <td><span class="pill ${u.role==="admin" ? "approved" : ""}" style="${u.role==="admin" ? "" : "background:#F1F0EA;color:var(--muted)"}">${u.role}</span></td>
+        <td><b>${fmtKES(u.walletBalance)}</b></td>
+        <td style="color:var(--muted)">${fmtDate(u.createdAt)}</td>
+        <td><div class="row-actions">
+          <button class="icon-btn" title="Credit wallet" onclick="openCredit('${u._id}','${u.name.replace(/'/g,"")}')">${ic("plus")}</button>
+          <button class="icon-btn" title="${u.role==="admin" ? "Demote to user" : "Promote to admin"}" onclick="toggleRole('${u._id}','${u.role}')">${ic("shield")}</button>
+        </div></td>
+      </tr>`).join("") : `<tr><td colspan="5"><div class="empty">No users yet.</div></td></tr>`;
+  }catch(e){ toast(e.message, true); }
+}
+
+document.getElementById("addUserBtn").innerHTML = ic("plus") + " Add user / admin";
+const userModal = document.getElementById("userModal");
+document.getElementById("addUserBtn").addEventListener("click", () => userModal.classList.add("open"));
+document.getElementById("nuCancel").addEventListener("click", () => userModal.classList.remove("open"));
+userModal.addEventListener("click", e => { if(e.target === userModal) userModal.classList.remove("open"); });
+document.getElementById("nuSave").addEventListener("click", async () => {
+  const name = document.getElementById("nuName").value.trim();
+  const email = document.getElementById("nuEmail").value.trim();
+  const password = document.getElementById("nuPass").value;
+  const role = document.getElementById("nuRole").value;
+  if(name.length < 3) return toast("Enter a full name.", true);
+  if(!/^\S+@\S+\.\S+$/.test(email)) return toast("Enter a valid email.", true);
+  if(password.length < 6) return toast("Password must be at least 6 characters.", true);
+  const btn = document.getElementById("nuSave");
+  btn.disabled = true; btn.textContent = "Creating…";
+  try{
+    await api("/api/admin/users", { method:"POST", body:{ name, email, password, role }});
+    userModal.classList.remove("open");
+    toast(role === "admin" ? "Admin account created." : "User account created.");
+    loadUsers();
+  }catch(e){ toast(e.message, true); }
+  btn.disabled = false; btn.textContent = "Create account";
+});
+async function toggleRole(id, current){
+  const next = current === "admin" ? "user" : "admin";
+  if(!confirm(`${next === "admin" ? "Promote to admin" : "Demote to user"}?`)) return;
+  try{
+    await api("/api/admin/users/" + id + "/role", { method:"PATCH", body:{ role: next }});
+    toast("Role updated to " + next + ".");
+    loadUsers();
+  }catch(e){ toast(e.message, true); }
+}
+
+let creditUserId = null;
+const crModal = document.getElementById("creditModal");
+function openCredit(id, name){
+  creditUserId = id;
+  document.getElementById("creditWho").textContent = "Crediting: " + name;
+  document.getElementById("crAmount").value = ""; document.getElementById("crRef").value = "";
+  crModal.classList.add("open");
+}
+document.getElementById("crCancel").addEventListener("click", () => crModal.classList.remove("open"));
+crModal.addEventListener("click", e => { if(e.target === crModal) crModal.classList.remove("open"); });
+document.getElementById("crSave").addEventListener("click", async () => {
+  const amount = Number(document.getElementById("crAmount").value);
+  if(!amount || amount <= 0) return toast("Enter a valid amount.", true);
+  try{
+    await api("/api/admin/wallet/credit", { method:"POST", body:{ userId: creditUserId, amount, reference: document.getElementById("crRef").value.trim() || "manual" }});
+    crModal.classList.remove("open");
+    toast("Wallet credited."); loadUsers();
+  }catch(e){ toast(e.message, true); }
+});
+
+async function loadPayments(){
+  try{
+    const rows = await api("/api/admin/payments");
+    document.getElementById("payRows").innerHTML = rows.length ? rows.map(p =>
+      `<tr>
+        <td><code style="font-size:12px">${p.reference}</code></td>
+        <td>${p.user?.name || "—"}<br><small style="color:var(--muted)">${p.user?.email || ""}</small></td>
+        <td><b>${fmtKES(p.amount)}</b></td>
+        <td><span class="pill ${p.status}">${p.status}</span></td>
+        <td style="color:var(--muted)">${fmtDate(p.createdAt)}</td>
+      </tr>`).join("") : `<tr><td colspan="5"><div class="empty">No payments yet.</div></td></tr>`;
+  }catch(e){ toast(e.message, true); }
+}
+
+</script>
+</body>
+</html>
